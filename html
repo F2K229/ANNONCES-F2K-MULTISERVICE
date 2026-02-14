@@ -45,7 +45,7 @@
             font-size: 0.9em;
         }
         .btn-connect { background: #27ae60; }
-        .btn-admin { background: #e67e22; text-decoration: none; display: inline-block; }
+        .btn-admin { background: #e67e22; }
         .btn-deconnect { background: #e74c3c; }
         
         .container {
@@ -146,11 +146,12 @@
             top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.5);
             z-index: 1000;
+            overflow-y: auto;
         }
         .modal-content {
             background: white;
             width: 90%;
-            max-width: 400px;
+            max-width: 800px;
             margin: 50px auto;
             padding: 30px;
             border-radius: 10px;
@@ -190,21 +191,59 @@
             border: 1px solid #ddd;
             border-radius: 5px;
         }
-        .loading {
-            text-align: center;
-            padding: 50px;
-            color: #666;
+        .admin-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
         }
-        footer {
-            text-align: center;
-            padding: 20px;
-            color: #666;
+        .tab-btn {
+            flex: 1;
+            padding: 15px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            min-width: 120px;
         }
-        .user-greeting {
+        .tab-btn.active {
+            background: #e67e22;
             color: white;
-            margin-right: 15px;
-            font-weight: bold;
         }
+        .candidat-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            background: #f9f9f9;
+            margin: 5px 0;
+            border-radius: 5px;
+        }
+        .candidat-info { flex: 1; }
+        .candidat-info strong { color: #2c3e50; }
+        .candidat-info small { color: #666; display: block; }
+        .candidat-actions { display: flex; gap: 10px; }
+        .btn-ban { background: #e74c3c; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .btn-unban { background: #27ae60; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .btn-delete { background: #c0392b; color: white; border: none; padding: 5px 15px; border-radius: 5px; cursor: pointer; }
+        .badge-banni { background: #e74c3c; color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.8em; margin-left: 10px; }
+        .badge-non-verifie { background: #f39c12; color: white; padding: 3px 10px; border-radius: 20px; font-size: 0.8em; margin-left: 10px; }
+        .loading { text-align: center; padding: 50px; color: #666; }
+        .preview-image { max-width: 200px; max-height: 200px; margin: 10px 0; display: none; }
+        .user-greeting { color: white; margin-right: 15px; font-weight: bold; }
+        .login-box {
+            background: white;
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+        }
+        .error-message { color: #e74c3c; text-align: center; margin: 10px 0; }
+        .success-message { color: #27ae60; text-align: center; margin: 10px 0; }
+        footer { text-align: center; padding: 20px; color: #666; }
     </style>
 </head>
 <body>
@@ -215,10 +254,12 @@
             <span id="user-greeting" class="user-greeting"></span>
             <div class="nav-buttons">
                 <button class="nav-btn btn-connect" onclick="afficherConnexion()" id="connectBtn">🔐 Se connecter</button>
-                <a href="admin.html" class="nav-btn btn-admin">⚙️ Admin</a>
+                <button class="nav-btn btn-admin" onclick="afficherAdmin()">⚙️ Admin</button>
             </div>
         </div>
-    </div>    <div class="container">
+    </div>
+
+    <div class="container">
         <!-- BANNIERE -->
         <div class="hero">
             <h1>F2K MULTISERVICE</h1>
@@ -243,14 +284,13 @@
         <footer>
             <p>&copy; 2025 F2K MULTISERVICE - Tous droits réservés</p>
         </footer>
-    </div>
-
-    <!-- MODALE DE CONNEXION -->
+    </div>    <!-- MODALE DE CONNEXION -->
     <div id="modal-connexion" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 400px;">
             <span class="close" onclick="fermerModal('modal-connexion')">&times;</span>
             <h2>🔐 Connexion</h2>
             <div id="login-error" style="color: red; margin-bottom: 10px;"></div>
+            <div id="login-success" class="success-message"></div>
             <input type="email" id="login-email" placeholder="Email" required>
             <input type="password" id="login-password" placeholder="Mot de passe" required>
             <button onclick="connecter()">Se connecter</button>
@@ -260,10 +300,11 @@
 
     <!-- MODALE D'INSCRIPTION -->
     <div id="modal-inscription" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 400px;">
             <span class="close" onclick="fermerModal('modal-inscription')">&times;</span>
             <h2>📝 Inscription</h2>
             <div id="register-error" style="color: red; margin-bottom: 10px;"></div>
+            <div id="register-success" class="success-message"></div>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                 <input type="text" id="reg-nom" placeholder="Nom" required>
                 <input type="text" id="reg-prenom" placeholder="Prénom" required>
@@ -289,16 +330,70 @@
             <button onclick="inscrire()">Créer mon compte</button>
             <p style="text-align: center;">Déjà un compte ? <a href="#" onclick="afficherConnexion(); return false;">Se connecter</a></p>
         </div>
-              </div>    <script type="module">
+    </div>
+
+    <!-- MODALE ADMIN -->
+    <div id="modal-admin" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('modal-admin')">&times;</span>
+            <h2>⚙️ Administration</h2>
+            
+            <div id="admin-login" style="display: block;">
+                <h3>Connexion admin</h3>
+                <div id="admin-error" class="error-message"></div>
+                <input type="email" id="admin-email" placeholder="Email admin">
+                <input type="password" id="admin-password" placeholder="Mot de passe">
+                <button onclick="connecterAdmin()">Se connecter</button>
+            </div>
+
+            <div id="admin-panel" style="display: none;">
+                <div class="admin-tabs">
+                    <button class="tab-btn active" onclick="changerOnglet('publier')">➕ Publier</button>
+                    <button class="tab-btn" onclick="changerOnglet('offres')">📋 Gérer annonces</button>
+                    <button class="tab-btn" onclick="changerOnglet('candidats')">👥 Gérer candidats</button>
+                </div>
+
+                <div id="onglet-publier">
+                    <h3>Nouvelle annonce</h3>
+                    <input type="text" id="offre-titre" placeholder="Titre de l'annonce">
+                    <textarea id="offre-description" placeholder="Description" rows="4"></textarea>
+                    <select id="offre-type">
+                        <option>Annonce générale</option>
+                        <option>Offre d'emploi</option>
+                        <option>Événement</option>
+                        <option>Information</option>
+                    </select>
+                    <input type="text" id="offre-localisation" placeholder="Localisation" value="International">
+                    <input type="file" id="offre-image" accept="image/*">
+                    <img id="image-preview" class="preview-image">
+                    <button onclick="publierOffre()">Publier l'annonce</button>
+                </div>
+
+                <div id="onglet-offres" style="display: none;">
+                    <h3>Annonces publiées</h3>
+                    <div id="offres-list" class="item-list"></div>
+                </div>
+
+                <div id="onglet-candidats" style="display: none;">
+                    <h3>Candidats inscrits</h3>
+                    <div id="candidats-list" class="item-list"></div>
+                </div>
+            </div>
+        </div>
+    </div>    <script type="module">
         // ========== CONFIGURATION FIREBASE ==========
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { 
-            getFirestore, collection, addDoc, getDocs, query, orderBy, where 
+            getFirestore, collection, addDoc, getDocs, deleteDoc, doc, query, orderBy, updateDoc, where 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { 
+            getStorage, ref, uploadBytes, getDownloadURL 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
         import { 
             getAuth, 
             signInWithEmailAndPassword, 
             createUserWithEmailAndPassword, 
+            sendEmailVerification,
             signOut, 
             onAuthStateChanged 
         } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
@@ -314,16 +409,18 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const storage = getStorage(app);
         const auth = getAuth(app);
 
         // ========== VARIABLES GLOBALES ==========
         let utilisateurConnecte = null;
         let candidatInfo = null;
+        const adminEmails = ['admin@f2kmultiservice.com', 'f2kmultiservice@gmail.com'];
 
         // ========== GESTION AUTH ==========
         onAuthStateChanged(auth, async (user) => {
             utilisateurConnecte = user;
-            if (user) {
+            if (user && user.emailVerified) {
                 const q = query(collection(db, "candidats"), where("uid", "==", user.uid));
                 const snapshot = await getDocs(q);
                 if (!snapshot.empty) {
@@ -356,18 +453,27 @@
             await signOut(auth);
             fermerModal('modal-connexion');
             fermerModal('modal-inscription');
+            fermerModal('modal-admin');
             location.reload();
         };
 
         // ========== MODALES ==========
         window.afficherConnexion = function() {
             fermerModal('modal-inscription');
+            fermerModal('modal-admin');
             document.getElementById('modal-connexion').style.display = 'block';
         };
 
         window.afficherInscription = function() {
             fermerModal('modal-connexion');
+            fermerModal('modal-admin');
             document.getElementById('modal-inscription').style.display = 'block';
+        };
+
+        window.afficherAdmin = function() {
+            fermerModal('modal-connexion');
+            fermerModal('modal-inscription');
+            document.getElementById('modal-admin').style.display = 'block';
         };
 
         window.fermerModal = function(id) {
@@ -389,34 +495,72 @@
             document.getElementById('indicatif').textContent = indicatifs[this.value] || '+229';
         });
 
-        // ========== CONNEXION CANDIDAT ==========
+        // Prévisualisation image
+        document.getElementById('offre-image')?.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const preview = document.getElementById('image-preview');
+                    preview.src = e.target.result;
+                    preview.style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        // ========== CONNEXION CANDIDAT AVEC VÉRIFICATION EMAIL ==========
         window.connecter = async function() {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
+            const errorDiv = document.getElementById('login-error');
+            const successDiv = document.getElementById('login-success');
             
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
+
             try {
-                await signInWithEmailAndPassword(auth, email, password);
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                if (!user.emailVerified) {
+                    await signOut(auth);
+                    
+                    if (confirm('❌ Votre email n\'a pas encore été vérifié. Voulez-vous renvoyer l\'email de confirmation ?')) {
+                        await sendEmailVerification(user);
+                        successDiv.textContent = '✅ Un nouvel email de confirmation a été envoyé à ' + email;
+                    }
+                    
+                    errorDiv.textContent = 'Veuillez vérifier votre email avant de vous connecter.';
+                    return;
+                }
                 
                 const q = query(collection(db, "candidats"), where("email", "==", email));
                 const snapshot = await getDocs(q);
                 
                 if (!snapshot.empty) {
                     const candidat = snapshot.docs[0].data();
+                    
+                    const docRef = snapshot.docs[0].ref;
+                    await updateDoc(docRef, { emailVerifie: true });
+                    
                     if (candidat.banni) {
                         await signOut(auth);
-                        document.getElementById('login-error').textContent = '❌ Ce compte a été banni. Contactez l\'administrateur.';
+                        errorDiv.textContent = '❌ Ce compte a été banni.';
                         return;
                     }
                 }
                 
-                alert('✅ Connexion réussie !');
-                fermerModal('modal-connexion');
+                successDiv.textContent = '✅ Connexion réussie !';
+                setTimeout(() => {
+                    fermerModal('modal-connexion');
+                    location.reload();
+                }, 1500);
+                
             } catch (error) {
-                document.getElementById('login-error').textContent = 'Email ou mot de passe incorrect';
+                errorDiv.textContent = 'Email ou mot de passe incorrect';
             }
-        };
-
-        // ========== INSCRIPTION CANDIDAT ==========
+        };        // ========== INSCRIPTION CANDIDAT AVEC CONFIRMATION EMAIL ==========
         window.inscrire = async function() {
             const nom = document.getElementById('reg-nom').value;
             const prenom = document.getElementById('reg-prenom').value;
@@ -426,14 +570,19 @@
             const telephone = document.getElementById('reg-telephone').value.replace(/\s/g, '');
             const password = document.getElementById('reg-password').value;
             const confirm = document.getElementById('reg-confirm').value;
+            const errorDiv = document.getElementById('register-error');
+            const successDiv = document.getElementById('register-success');
+
+            errorDiv.textContent = '';
+            successDiv.textContent = '';
 
             if (!nom || !prenom || !email || !pays || !telephone || !password) {
-                document.getElementById('register-error').textContent = 'Tous les champs sont obligatoires';
+                errorDiv.textContent = 'Tous les champs sont obligatoires';
                 return;
             }
 
             if (password !== confirm) {
-                document.getElementById('register-error').textContent = 'Les mots de passe ne correspondent pas';
+                errorDiv.textContent = 'Les mots de passe ne correspondent pas';
                 return;
             }
 
@@ -441,19 +590,221 @@
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
+                await sendEmailVerification(user);
+                
                 await addDoc(collection(db, "candidats"), {
                     uid: user.uid,
-                    nom, prenom, email, pays,
+                    nom: nom,
+                    prenom: prenom,
+                    email: email,
+                    pays: pays,
                     telephone: `${indicatif}${telephone}`,
                     dateInscription: new Date(),
-                    banni: false
+                    banni: false,
+                    emailVerifie: false
                 });
 
-                alert('✅ Inscription réussie ! Connectez-vous maintenant.');
-                fermerModal('modal-inscription');
-                afficherConnexion();
+                await signOut(auth);
+                
+                successDiv.textContent = '✅ Inscription réussie ! Un email de confirmation a été envoyé. Vérifiez votre boîte de réception.';
+                
+                setTimeout(() => {
+                    fermerModal('modal-inscription');
+                    afficherConnexion();
+                }, 3000);
+                
             } catch (error) {
-                document.getElementById('register-error').textContent = 'Erreur: ' + error.message;
+                if (error.code === 'auth/email-already-in-use') {
+                    errorDiv.textContent = 'Cet email est déjà utilisé';
+                } else {
+                    errorDiv.textContent = 'Erreur: ' + error.message;
+                }
+            }
+        };
+
+        // ========== ADMIN ==========
+        window.connecterAdmin = async function() {
+            const email = document.getElementById('admin-email').value;
+            const password = document.getElementById('admin-password').value;
+            const errorDiv = document.getElementById('admin-error');
+
+            try {
+                const userCredential = await signInWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+                
+                if (!adminEmails.includes(email)) {
+                    await signOut(auth);
+                    errorDiv.textContent = 'Accès non autorisé';
+                    return;
+                }
+                
+                if (!user.emailVerified) {
+                    errorDiv.textContent = 'Veuillez vérifier votre email admin';
+                    return;
+                }
+                
+                document.getElementById('admin-login').style.display = 'none';
+                document.getElementById('admin-panel').style.display = 'block';
+                chargerOffresAdmin();
+                chargerCandidatsAdmin();
+            } catch (error) {
+                errorDiv.textContent = 'Email ou mot de passe incorrect';
+            }
+        };
+
+        window.changerOnglet = function(onglet) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.getElementById('onglet-publier').style.display = onglet === 'publier' ? 'block' : 'none';
+            document.getElementById('onglet-offres').style.display = onglet === 'offres' ? 'block' : 'none';
+            document.getElementById('onglet-candidats').style.display = onglet === 'candidats' ? 'block' : 'none';
+            
+            if (onglet === 'candidats') chargerCandidatsAdmin();
+            if (onglet === 'offres') chargerOffresAdmin();
+        };
+
+        window.publierOffre = async function() {
+            const titre = document.getElementById('offre-titre').value;
+            const description = document.getElementById('offre-description').value;
+            const type = document.getElementById('offre-type').value;
+            const localisation = document.getElementById('offre-localisation').value;
+            const imageFile = document.getElementById('offre-image').files[0];
+
+            if (!titre || !description) {
+                alert('Veuillez remplir le titre et la description');
+                return;
+            }
+
+            try {
+                let imageUrl = '';
+                if (imageFile) {
+                    const storageRef = ref(storage, `offres/${Date.now()}_${imageFile.name}`);
+                    const snapshot = await uploadBytes(storageRef, imageFile);
+                    imageUrl = await getDownloadURL(snapshot.ref);
+                }
+
+                await addDoc(collection(db, "offres"), {
+                    titre: titre,
+                    description: description,
+                    type: type,
+                    localisation: localisation,
+                    imageUrl: imageUrl,
+                    dateCreation: new Date()
+                });
+
+                alert('✅ Annonce publiée !');
+                document.getElementById('offre-titre').value = '';
+                document.getElementById('offre-description').value = '';
+                document.getElementById('offre-type').value = 'Annonce générale';
+                document.getElementById('offre-localisation').value = 'International';
+                document.getElementById('offre-image').value = '';
+                document.getElementById('image-preview').style.display = 'none';
+                chargerOffres();
+                chargerOffresAdmin();
+            } catch (error) {
+                alert('Erreur: ' + error.message);
+            }
+        };
+
+        async function chargerOffresAdmin() {
+            const container = document.getElementById('offres-list');
+            const q = query(collection(db, "offres"), orderBy("dateCreation", "desc"));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                container.innerHTML = '<p style="text-align:center; padding:20px;">Aucune annonce publiée</p>';
+                return;
+            }
+
+            let html = '';
+            snapshot.forEach(doc => {
+                const offre = doc.data();
+                html += `
+                    <div class="candidat-item">
+                        <div class="candidat-info">
+                            <strong>${offre.titre}</strong><br>
+                            <small>${offre.localisation} - ${offre.type}</small>
+                        </div>
+                        <button class="btn-delete" onclick="supprimerOffre('${doc.id}')">Supprimer</button>
+                    </div>
+                `;
+            });
+            container.innerHTML = html;
+        }
+
+        window.supprimerOffre = async function(id) {
+            if (confirm('Supprimer cette annonce ?')) {
+                await deleteDoc(doc(db, "offres", id));
+                chargerOffres();
+                chargerOffresAdmin();
+                alert('✅ Annonce supprimée');
+            }
+        };
+
+        async function chargerCandidatsAdmin() {
+            const container = document.getElementById('candidats-list');
+            const q = query(collection(db, "candidats"), orderBy("dateInscription", "desc"));
+            const snapshot = await getDocs(q);
+            
+            if (snapshot.empty) {
+                container.innerHTML = '<p style="text-align:center; padding:20px;">Aucun candidat inscrit</p>';
+                return;
+            }
+
+            let html = '';
+            for (const docSnapshot of snapshot.docs) {
+                const candidat = docSnapshot.data();
+                const date = candidat.dateInscription?.toDate ? 
+                    candidat.dateInscription.toDate().toLocaleDateString('fr-FR') : '';
+                
+                html += `
+                    <div class="candidat-item">
+                        <div class="candidat-info">
+                            <strong>${candidat.prenom || ''} ${candidat.nom || ''}</strong>
+                            ${candidat.banni ? '<span class="badge-banni">Banni</span>' : ''}
+                            ${!candidat.emailVerifie ? '<span class="badge-non-verifie">Email non vérifié</span>' : ''}
+                            <br>
+                            <small>📧 ${candidat.email || ''}</small>
+                            <br>
+                            <small>📱 ${candidat.telephone || ''} | ${candidat.pays || ''}</small>
+                            <br>
+                            <small>📅 Inscrit le ${date}</small>
+                        </div>
+                        <div class="candidat-actions">
+                            ${candidat.banni ? 
+                                `<button class="btn-unban" onclick="debannirCandidat('${docSnapshot.id}')">Réactiver</button>` : 
+                                `<button class="btn-ban" onclick="bannirCandidat('${docSnapshot.id}')">Bannir</button>`
+                            }
+                            <button class="btn-delete" onclick="supprimerCandidat('${docSnapshot.id}')">Supprimer</button>
+                        </div>
+                    </div>
+                `;
+            }
+            container.innerHTML = html;
+        }
+
+        window.bannirCandidat = async function(id) {
+            if (confirm('Bannir ce candidat ?')) {
+                await updateDoc(doc(db, "candidats", id), { banni: true });
+                chargerCandidatsAdmin();
+                alert('✅ Candidat banni');
+            }
+        };
+
+        window.debannirCandidat = async function(id) {
+            if (confirm('Réactiver ce candidat ?')) {
+                await updateDoc(doc(db, "candidats", id), { banni: false });
+                chargerCandidatsAdmin();
+                alert('✅ Candidat réactivé');
+            }
+        };
+
+        window.supprimerCandidat = async function(id) {
+            if (confirm('⚠️ Supprimer définitivement ce candidat ? Cette action est irréversible.')) {
+                await deleteDoc(doc(db, "candidats", id));
+                chargerCandidatsAdmin();
+                alert('✅ Candidat supprimé de la base');
             }
         };
 
@@ -480,12 +831,12 @@
                             ${offre.imageUrl ? `<img src="${offre.imageUrl}" class="offre-image">` : 
                                 `<div style="height:200px; background:#667eea; display:flex; align-items:center; justify-content:center; color:white; font-size:2em;">📸</div>`}
                             <div class="offre-content">
-                                <h3 class="offre-titre">${offre.titre}</h3>
+                                <h3 class="offre-titre">${offre.titre || 'Sans titre'}</h3>
                                 <div class="offre-tags">
                                     <span class="offre-tag">${offre.type || 'Annonce'}</span>
                                     <span class="offre-tag">📍 ${offre.localisation || 'International'}</span>
                                 </div>
-                                <p class="offre-description">${offre.description.substring(0, 150)}${offre.description.length > 150 ? '...' : ''}</p>
+                                <p class="offre-description">${offre.description ? offre.description.substring(0, 150) + (offre.description.length > 150 ? '...' : '') : ''}</p>
                                 <button class="btn-postuler" onclick="postuler('${offre.titre}')">Postuler</button>
                             </div>
                         </div>
@@ -519,10 +870,8 @@
             try {
                 const sujet = encodeURIComponent(`Candidature ${offreTitre} - ${candidatInfo.prenom} ${candidatInfo.nom}`);
                 const corps = encodeURIComponent(
-                    `NOUVELLE CANDIDATURE F2K MULTISERVICE\n\n` +
-                    `Annonce : ${offreTitre}\n\n` +
-                    `--- INFORMATIONS CANDIDAT ---\n` +
-                    `Nom complet : ${candidatInfo.nom} ${candidatInfo.prenom}\n` +
+                    `Candidature pour : ${offreTitre}\n\n` +
+                    `Nom : ${candidatInfo.nom} ${candidatInfo.prenom}\n` +
                     `Email : ${candidatInfo.email}\n` +
                     `Téléphone : ${candidatInfo.telephone}\n` +
                     `Pays : ${candidatInfo.pays}\n\n` +
@@ -531,15 +880,16 @@
                 window.location.href = `mailto:f2kmultiservice@gmail.com?subject=${sujet}&body=${corps}`;
 
                 setTimeout(() => {
-                    if (confirm('📱 Envoyer aussi sur WhatsApp ?')) {
+                    if (confirm('📱 Envoyer aussi votre candidature sur WhatsApp pour une réponse plus rapide ?')) {
                         const msg = encodeURIComponent(
-                            `*CANDIDATURE F2K*\n\n` +
+                            `*CANDIDATURE F2K MULTISERVICE*\n\n` +
                             `Annonce : ${offreTitre}\n\n` +
                             `*Candidat :*\n` +
                             `👤 ${candidatInfo.prenom} ${candidatInfo.nom}\n` +
                             `📧 ${candidatInfo.email}\n` +
                             `📱 ${candidatInfo.telephone}\n` +
-                            `🌍 ${candidatInfo.pays}`
+                            `🌍 ${candidatInfo.pays}\n\n` +
+                            `Date : ${new Date().toLocaleDateString('fr-FR')}`
                         );
                         window.open(`https://wa.me/2290199878742?text=${msg}`, '_blank');
                     }
@@ -554,4 +904,4 @@
         chargerOffres();
     </script>
 </body>
-  </html>
+</html>
