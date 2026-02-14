@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F2K MULTISERVICE - Annonces</title>
+    <!-- Firebase SDK -->
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js"></script>
+    <script type="module" src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js"></script>
+    
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        .top-bar {
+            background: #2c3e50;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .logo {
+            color: white;
+            font-size: 1.5em;
+            font-weight: bold;
+        }
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .nav-btn {
+            color: white;
+            text-decoration: none;
+            padding: 8px 20px;
+            border-radius: 5px;
+            border: none;
+            cursor: pointer;
+            font-size: 0.9em;
+        }
+        .btn-connect { background: #27ae60; }
+        .btn-admin { background: #e67e22; text-decoration: none; display: inline-block; }
+        .btn-deconnect { background: #e74c3c; }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .hero {
+            background: #2c3e50;
+            color: white;
+            padding: 60px 40px;
+            text-align: center;
+            border-radius: 10px;
+            margin: 20px 0 40px;
+        }
+        .hero h1 { font-size: 2.8em; margin-bottom: 15px; }
+        .hero p { font-size: 1.3em; opacity: 0.9; }
+        
+        .offres-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 30px;
+            margin: 40px 0;
+        }
+        .offre-card {
+            background: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        .offre-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+        }
+        .offre-content {
+            padding: 20px;
+        }
+        .offre-titre {
+            color: #2c3e50;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
+        .offre-tags {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .offre-tag {
+            background: #e67e22;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.8em;
+        }
+        .offre-description {
+            color: #555;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        .btn-postuler {
+            width: 100%;
+            background: #2c3e50;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .btn-postuler:hover { background: #e67e22; }
+        
+        .contact-info {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            margin: 40px 0;
+        }
+        .contact-details {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        .contact-item a {
+            color: #e67e22;
+            text-decoration: none;
+        }
+        
+        /* MODALES */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+        .modal-content {
+            background: white;
+            width: 90%;
+            max-width: 400px;
+            margin: 50px auto;
+            padding: 30px;
+            border-radius: 10px;
+            position: relative;
+        }
+        .close {
+            position: absolute;
+            right: 20px; top: 10px;
+            font-size: 2em;
+            cursor: pointer;
+        }
+        .modal input, .modal select, .modal textarea {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .modal button {
+            width: 100%;
+            padding: 12px;
+            background: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        .phone-row {
+            display: flex;
+            gap: 10px;
+        }
+        .phone-prefix {
+            width: 80px;
+            padding: 10px;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #666;
+        }
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+        .user-greeting {
+            color: white;
+            margin-right: 15px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <!-- HEADER -->
+    <div class="top-bar">
+        <div class="logo">🌐 F2K MULTISERVICE</div>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span id="user-greeting" class="user-greeting"></span>
+            <div class="nav-buttons">
+                <button class="nav-btn btn-connect" onclick="afficherConnexion()" id="connectBtn">🔐 Se connecter</button>
+                <a href="admin.html" class="nav-btn btn-admin">⚙️ Admin</a>
+            </div>
+        </div>
+    </div>    <div class="container">
+        <!-- BANNIERE -->
+        <div class="hero">
+            <h1>F2K MULTISERVICE</h1>
+            <p>Découvrez toutes nos annonces dans le monde entier 🌍</p>
+        </div>
+
+        <!-- ANNONCES -->
+        <h2 style="color: #2c3e50;">📢 Annonces disponibles</h2>
+        <div id="offres-container" class="offres-grid">
+            <div class="loading">Chargement des annonces...</div>
+        </div>
+
+        <!-- CONTACT -->
+        <div class="contact-info">
+            <h3>📞 Contactez-nous</h3>
+            <div class="contact-details">
+                <div class="contact-item">📧 <a href="mailto:f2kmultiservice@gmail.com">f2kmultiservice@gmail.com</a></div>
+                <div class="contact-item">📱 <a href="https://wa.me/2290199878742" target="_blank">WhatsApp: +229 01 99 87 87 42</a></div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>&copy; 2025 F2K MULTISERVICE - Tous droits réservés</p>
+        </footer>
+    </div>
+
+    <!-- MODALE DE CONNEXION -->
+    <div id="modal-connexion" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('modal-connexion')">&times;</span>
+            <h2>🔐 Connexion</h2>
+            <div id="login-error" style="color: red; margin-bottom: 10px;"></div>
+            <input type="email" id="login-email" placeholder="Email" required>
+            <input type="password" id="login-password" placeholder="Mot de passe" required>
+            <button onclick="connecter()">Se connecter</button>
+            <p style="text-align: center;">Pas encore de compte ? <a href="#" onclick="afficherInscription(); return false;">S'inscrire</a></p>
+        </div>
+    </div>
+
+    <!-- MODALE D'INSCRIPTION -->
+    <div id="modal-inscription" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="fermerModal('modal-inscription')">&times;</span>
+            <h2>📝 Inscription</h2>
+            <div id="register-error" style="color: red; margin-bottom: 10px;"></div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                <input type="text" id="reg-nom" placeholder="Nom" required>
+                <input type="text" id="reg-prenom" placeholder="Prénom" required>
+            </div>
+            <input type="email" id="reg-email" placeholder="Email" required>
+            <select id="reg-pays" required>
+                <option value="">Sélectionnez votre pays</option>
+                <option value="Bénin">Bénin (+229)</option>
+                <option value="Côte d'Ivoire">Côte d'Ivoire (+225)</option>
+                <option value="Sénégal">Sénégal (+221)</option>
+                <option value="Togo">Togo (+228)</option>
+                <option value="Cameroun">Cameroun (+237)</option>
+                <option value="France">France (+33)</option>
+                <option value="Belgique">Belgique (+32)</option>
+                <option value="Canada">Canada (+1)</option>
+            </select>
+            <div class="phone-row">
+                <span class="phone-prefix" id="indicatif">+229</span>
+                <input type="tel" id="reg-telephone" placeholder="Numéro WhatsApp" style="flex:1;" required>
+            </div>
+            <input type="password" id="reg-password" placeholder="Mot de passe (min 6 caractères)" required>
+            <input type="password" id="reg-confirm" placeholder="Confirmer mot de passe" required>
+            <button onclick="inscrire()">Créer mon compte</button>
+            <p style="text-align: center;">Déjà un compte ? <a href="#" onclick="afficherConnexion(); return false;">Se connecter</a></p>
+        </div>
+              </div>    <script type="module">
+        // ========== CONFIGURATION FIREBASE ==========
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { 
+            getFirestore, collection, addDoc, getDocs, query, orderBy, where 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        import { 
+            getAuth, 
+            signInWithEmailAndPassword, 
+            createUserWithEmailAndPassword, 
+            signOut, 
+            onAuthStateChanged 
+        } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCvnb4ZgcoJtXiJW0ojfSR7ag9KDbOzqA0",
+            authDomain: "recrutement-f2k-multiservice.firebaseapp.com",
+            projectId: "recrutement-f2k-multiservice",
+            storageBucket: "recrutement-f2k-multiservice.firebasestorage.app",
+            messagingSenderId: "960700922367",
+            appId: "1:960700922367:web:63eb70c336a22f37044fca"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // ========== VARIABLES GLOBALES ==========
+        let utilisateurConnecte = null;
+        let candidatInfo = null;
+
+        // ========== GESTION AUTH ==========
+        onAuthStateChanged(auth, async (user) => {
+            utilisateurConnecte = user;
+            if (user) {
+                const q = query(collection(db, "candidats"), where("uid", "==", user.uid));
+                const snapshot = await getDocs(q);
+                if (!snapshot.empty) {
+                    candidatInfo = snapshot.docs[0].data();
+                    document.getElementById('user-greeting').textContent = `👋 Bonjour, ${candidatInfo.prenom}`;
+                }
+            } else {
+                candidatInfo = null;
+                document.getElementById('user-greeting').textContent = '';
+            }
+            majBoutonConnexion();
+        });
+
+        function majBoutonConnexion() {
+            const btn = document.getElementById('connectBtn');
+            if (utilisateurConnecte) {
+                btn.textContent = '🔐 Déconnexion';
+                btn.classList.remove('btn-connect');
+                btn.classList.add('btn-deconnect');
+                btn.onclick = deconnexion;
+            } else {
+                btn.textContent = '🔐 Se connecter';
+                btn.classList.remove('btn-deconnect');
+                btn.classList.add('btn-connect');
+                btn.onclick = afficherConnexion;
+            }
+        }
+
+        window.deconnexion = async function() {
+            await signOut(auth);
+            fermerModal('modal-connexion');
+            fermerModal('modal-inscription');
+            location.reload();
+        };
+
+        // ========== MODALES ==========
+        window.afficherConnexion = function() {
+            fermerModal('modal-inscription');
+            document.getElementById('modal-connexion').style.display = 'block';
+        };
+
+        window.afficherInscription = function() {
+            fermerModal('modal-connexion');
+            document.getElementById('modal-inscription').style.display = 'block';
+        };
+
+        window.fermerModal = function(id) {
+            document.getElementById(id).style.display = 'none';
+        };
+
+        // Mise à jour indicatif pays
+        document.getElementById('reg-pays')?.addEventListener('change', function() {
+            const indicatifs = {
+                'Bénin': '+229',
+                'Côte d\'Ivoire': '+225',
+                'Sénégal': '+221',
+                'Togo': '+228',
+                'Cameroun': '+237',
+                'France': '+33',
+                'Belgique': '+32',
+                'Canada': '+1'
+            };
+            document.getElementById('indicatif').textContent = indicatifs[this.value] || '+229';
+        });
+
+        // ========== CONNEXION CANDIDAT ==========
+        window.connecter = async function() {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                
+                const q = query(collection(db, "candidats"), where("email", "==", email));
+                const snapshot = await getDocs(q);
+                
+                if (!snapshot.empty) {
+                    const candidat = snapshot.docs[0].data();
+                    if (candidat.banni) {
+                        await signOut(auth);
+                        document.getElementById('login-error').textContent = '❌ Ce compte a été banni. Contactez l\'administrateur.';
+                        return;
+                    }
+                }
+                
+                alert('✅ Connexion réussie !');
+                fermerModal('modal-connexion');
+            } catch (error) {
+                document.getElementById('login-error').textContent = 'Email ou mot de passe incorrect';
+            }
+        };
+
+        // ========== INSCRIPTION CANDIDAT ==========
+        window.inscrire = async function() {
+            const nom = document.getElementById('reg-nom').value;
+            const prenom = document.getElementById('reg-prenom').value;
+            const email = document.getElementById('reg-email').value;
+            const pays = document.getElementById('reg-pays').value;
+            const indicatif = document.getElementById('indicatif').textContent;
+            const telephone = document.getElementById('reg-telephone').value.replace(/\s/g, '');
+            const password = document.getElementById('reg-password').value;
+            const confirm = document.getElementById('reg-confirm').value;
+
+            if (!nom || !prenom || !email || !pays || !telephone || !password) {
+                document.getElementById('register-error').textContent = 'Tous les champs sont obligatoires';
+                return;
+            }
+
+            if (password !== confirm) {
+                document.getElementById('register-error').textContent = 'Les mots de passe ne correspondent pas';
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                await addDoc(collection(db, "candidats"), {
+                    uid: user.uid,
+                    nom, prenom, email, pays,
+                    telephone: `${indicatif}${telephone}`,
+                    dateInscription: new Date(),
+                    banni: false
+                });
+
+                alert('✅ Inscription réussie ! Connectez-vous maintenant.');
+                fermerModal('modal-inscription');
+                afficherConnexion();
+            } catch (error) {
+                document.getElementById('register-error').textContent = 'Erreur: ' + error.message;
+            }
+        };
+
+        // ========== AFFICHAGE ANNONCES ==========
+        async function chargerOffres() {
+            const container = document.getElementById('offres-container');
+            
+            try {
+                const q = query(collection(db, "offres"), orderBy("dateCreation", "desc"));
+                const snapshot = await getDocs(q);
+                
+                if (snapshot.empty) {
+                    container.innerHTML = '<div style="grid-column:1/-1; text-align:center; padding:50px;">Aucune annonce pour le moment</div>';
+                    return;
+                }
+
+                let html = '';
+                snapshot.forEach(doc => {
+                    const offre = doc.data();
+                    const date = offre.dateCreation?.toDate ? offre.dateCreation.toDate().toLocaleDateString('fr-FR') : '';
+                    
+                    html += `
+                        <div class="offre-card">
+                            ${offre.imageUrl ? `<img src="${offre.imageUrl}" class="offre-image">` : 
+                                `<div style="height:200px; background:#667eea; display:flex; align-items:center; justify-content:center; color:white; font-size:2em;">📸</div>`}
+                            <div class="offre-content">
+                                <h3 class="offre-titre">${offre.titre}</h3>
+                                <div class="offre-tags">
+                                    <span class="offre-tag">${offre.type || 'Annonce'}</span>
+                                    <span class="offre-tag">📍 ${offre.localisation || 'International'}</span>
+                                </div>
+                                <p class="offre-description">${offre.description.substring(0, 150)}${offre.description.length > 150 ? '...' : ''}</p>
+                                <button class="btn-postuler" onclick="postuler('${offre.titre}')">Postuler</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch (error) {
+                container.innerHTML = '<div style="color:red; text-align:center;">Erreur de chargement</div>';
+            }
+        }
+
+        // ========== POSTULATION ==========
+        window.postuler = async function(offreTitre) {
+            if (!utilisateurConnecte) {
+                alert('Veuillez vous connecter pour postuler');
+                afficherConnexion();
+                return;
+            }
+
+            if (!candidatInfo) {
+                alert('Profil non trouvé');
+                return;
+            }
+
+            if (candidatInfo.banni) {
+                alert('❌ Votre compte a été banni. Vous ne pouvez pas postuler.');
+                return;
+            }
+
+            try {
+                const sujet = encodeURIComponent(`Candidature ${offreTitre} - ${candidatInfo.prenom} ${candidatInfo.nom}`);
+                const corps = encodeURIComponent(
+                    `NOUVELLE CANDIDATURE F2K MULTISERVICE\n\n` +
+                    `Annonce : ${offreTitre}\n\n` +
+                    `--- INFORMATIONS CANDIDAT ---\n` +
+                    `Nom complet : ${candidatInfo.nom} ${candidatInfo.prenom}\n` +
+                    `Email : ${candidatInfo.email}\n` +
+                    `Téléphone : ${candidatInfo.telephone}\n` +
+                    `Pays : ${candidatInfo.pays}\n\n` +
+                    `Date : ${new Date().toLocaleDateString('fr-FR')}`
+                );
+                window.location.href = `mailto:f2kmultiservice@gmail.com?subject=${sujet}&body=${corps}`;
+
+                setTimeout(() => {
+                    if (confirm('📱 Envoyer aussi sur WhatsApp ?')) {
+                        const msg = encodeURIComponent(
+                            `*CANDIDATURE F2K*\n\n` +
+                            `Annonce : ${offreTitre}\n\n` +
+                            `*Candidat :*\n` +
+                            `👤 ${candidatInfo.prenom} ${candidatInfo.nom}\n` +
+                            `📧 ${candidatInfo.email}\n` +
+                            `📱 ${candidatInfo.telephone}\n` +
+                            `🌍 ${candidatInfo.pays}`
+                        );
+                        window.open(`https://wa.me/2290199878742?text=${msg}`, '_blank');
+                    }
+                }, 1000);
+
+            } catch (error) {
+                alert('Erreur lors de la candidature');
+            }
+        };
+
+        // Charger les annonces au démarrage
+        chargerOffres();
+    </script>
+</body>
+  </html>
